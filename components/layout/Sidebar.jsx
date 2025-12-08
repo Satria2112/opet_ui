@@ -2,100 +2,110 @@
 
 import React, { useState } from "react";
 import SidebarPortal from "./SidebarPortal";
+import { IAM } from "@/constants/iam";
+import Icon from "@/components/ui/Icon";
 
-/* ================= ICON SET ================= */
-const Icon = ({ name }) => {
-  const stroke = "currentColor";
-  const w = 1.6;
+/* ================= OPET RECURSIVE SUBMENU ================= */
+function SubMenuList({
+  items,
+  activePath,
+  activatePath,
+  level = 1,
+  parentPath = [],
+}) {
+  const [openLocal, setOpenLocal] = useState([]);
 
-  const icons = {
-    master: (
-      <path d="M3 6h18M3 12h18M3 18h18" stroke={stroke} strokeWidth={w} />
-    ),
-    id: (
-      <>
-        <rect
-          x="3"
-          y="4"
-          width="18"
-          height="16"
-          rx="2"
-          stroke={stroke}
-          strokeWidth={w}
-        />
-        <circle cx="9" cy="10" r="2" stroke={stroke} strokeWidth={w} />
-      </>
-    ),
-    cams: <path d="M21 7l-6 2-2-2-4 2-6-1" stroke={stroke} strokeWidth={w} />,
-    petty: (
-      <>
-        <path d="M4 7h16v10H4z" stroke={stroke} strokeWidth={w} />
-        <path d="M9 12h6" stroke={stroke} strokeWidth={w} />
-      </>
-    ),
-    cost: (
-      <>
-        <path d="M12 3v18" stroke={stroke} strokeWidth={w} />
-        <path d="M17 7H9a4 4 0 000 8h6" stroke={stroke} strokeWidth={w} />
-      </>
-    ),
-    promo: (
-      <>
-        <path d="M4 12h16" stroke={stroke} strokeWidth={w} />
-        <path d="M12 4v16" stroke={stroke} strokeWidth={w} />
-      </>
-    ),
-    entertain: (
-      <>
-        <circle cx="8" cy="12" r="3" stroke={stroke} strokeWidth={w} />
-        <circle cx="16" cy="12" r="3" stroke={stroke} strokeWidth={w} />
-      </>
-    ),
-    kasbon: (
-      <>
-        <path d="M4 6h16v12H4z" stroke={stroke} strokeWidth={w} />
-        <path d="M8 10h8" stroke={stroke} strokeWidth={w} />
-      </>
-    ),
-    fund: (
-      <>
-        <path d="M3 12h18" stroke={stroke} strokeWidth={w} />
-        <path d="M6 8v8" stroke={stroke} strokeWidth={w} />
-        <path d="M18 8v8" stroke={stroke} strokeWidth={w} />
-      </>
-    ),
-    monitor: (
-      <>
-        <rect
-          x="3"
-          y="4"
-          width="18"
-          height="12"
-          rx="2"
-          stroke={stroke}
-          strokeWidth={w}
-        />
-        <path d="M8 20h8" stroke={stroke} strokeWidth={w} />
-      </>
-    ),
-    todo: <path d="M4 7h16M4 12h10" stroke={stroke} strokeWidth={w} />,
-    report: (
-      <>
-        <path d="M4 6h16v12H4z" stroke={stroke} strokeWidth={w} />
-        <path d="M8 10h8" stroke={stroke} strokeWidth={w} />
-      </>
-    ),
-    arrow: <path d="M9 6l6 6-6 6" stroke={stroke} strokeWidth="1.8" />,
+  const toggle = (key) => {
+    setOpenLocal((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
   };
 
   return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
-      {icons[name]}
-    </svg>
-  );
-};
+    <ul className="m-0 p-0">
+      {items.map((item) => {
+        const currentPath = [...parentPath, item.label];
+        const isActive = activePath.join("/") === currentPath.join("/");
+        const hasChildren =
+          Array.isArray(item.children) && item.children.length > 0;
+        const isOpen = openLocal.includes(item.key);
 
-/* ================= MENU ROW ================= */
+        return (
+          <li key={item.key}>
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+
+                activatePath(currentPath);
+
+                if (hasChildren) toggle(item.key);
+              }}
+              className={`group w-full flex items-center cursor-pointer gap-3 h-[47px] m-0 p-0
+              transition-all duration-150
+              ${
+                isActive
+                  ? "bg-[#001D56] scale-[1.03]"
+                  : "hover:bg-[#001D56] hover:scale-[1.03] hover:opacity-95"
+              }`}
+              style={{
+                paddingLeft: `${3.8 + (level - 1) * 1.7}rem`,
+                paddingRight: "1rem",
+              }}
+            >
+              {/* OPET Tree Icons */}
+              {hasChildren ? (
+                <Icon
+                  name={isOpen ? "folderOpen" : "folder"}
+                  className="w-4 h-4"
+                />
+              ) : (
+                <Icon name="file" className="w-3 h-3" />
+              )}
+
+              <span
+                className={`text-sm ${
+                  isActive ? "text-white" : "text-white/90"
+                }`}
+              >
+                {item.label}
+              </span>
+
+              {hasChildren && (
+                <span
+                  className={`ml-auto transition-transform ${
+                    isOpen ? "rotate-90" : ""
+                  }`}
+                >
+                  <Icon name="arrow" className="w-3 h-3" />
+                </span>
+              )}
+            </div>
+
+            {/* Render children */}
+            <div
+              className="overflow-hidden transition-all duration-400 ease-in-out"
+              style={{
+                maxHeight: isOpen ? "500px" : "0px",
+              }}
+            >
+              {hasChildren && (
+                <SubMenuList
+                  items={item.children}
+                  activePath={activePath}
+                  activatePath={activatePath}
+                  parentPath={currentPath}
+                  level={level + 1}
+                />
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/* ================= OPET PARENT MENU ROW =================*/
 function MenuRow({
   iconName,
   label,
@@ -103,7 +113,8 @@ function MenuRow({
   open,
   onClick,
   hasChildren,
-  onSelectMenu,
+  onActivate,
+  isActive,
 }) {
   const [hover, setHover] = useState(false);
   const [posY, setPosY] = useState(0);
@@ -111,7 +122,7 @@ function MenuRow({
 
   return (
     <div
-      className="relative"
+      className="relative w-full"
       onMouseEnter={(e) => {
         if (!collapsed) return;
         setHover(true);
@@ -122,70 +133,88 @@ function MenuRow({
       onMouseLeave={() => collapsed && setHover(false)}
     >
       <li
-        onClick={() => {
-          // 🔵 Kalau collapsed → langsung set breadcrumb
+        role="button"
+        onClick={(e) => {
+          e.stopPropagation();
           if (collapsed) {
-            onSelectMenu?.([label]);
+            onActivate([label]);
             return;
           }
-
-          // 🔵 Jika tidak collapsed → klik normal (toggle submenu)
           onClick?.();
-
-          // 🔵 Jika tidak punya children → breadcrumb langsung update
-          if (!hasChildren) {
-            onSelectMenu?.([label]);
-          }
+          onActivate([label]);
         }}
         className={`
-          flex items-center cursor-pointer transition-all
-          h-12
+          group w-full flex items-center cursor-pointer h-[47px] m-0 p-0
+          transition-all duration-150 ease-in-out
           ${
-            collapsed
-              ? "justify-center hover:bg-[#002b59]"
-              : "px-6 py-3 justify-between hover:bg-[#002b59]"
+            isActive
+              ? "bg-[#001D56] scale-[1.03]"
+              : "hover:bg-[#001D56]/80 hover:scale-[1.03] hover:opacity-90"
           }
         `}
       >
         <div
-          className={`flex items-center text-white/95 ${
-            collapsed ? "justify-center w-full" : "gap-4"
+          className={`flex items-center text-white/95 w-full ${
+            collapsed ? "justify-center" : "justify-between px-6"
           }`}
         >
-          <Icon name={iconName} />
-          {!collapsed && (
-            <span className="text-[12px] font-medium text-[#FEFDFA]">
-              {label}
-            </span>
+          <div className={`flex items-center ${collapsed ? "" : "gap-4"}`}>
+            <Icon
+              name={iconName}
+              className={`
+                w-5 h-5
+                transition-all duration-500 ease-in-out
+                ${
+                  collapsed
+                    ? "group-hover:scale-110 group-hover:rotate-[360deg]"
+                    : ""
+                }
+              `}
+            />
+
+            {!collapsed && (
+              <span
+                className={`text-[12px] font-medium ${
+                  isActive ? "text-white" : "text-[#FEFDFA]"
+                }`}
+                style={{ letterSpacing: 0.2 }}
+              >
+                {label}
+              </span>
+            )}
+          </div>
+
+          {!collapsed && hasChildren && (
+            <div
+              className={`pr-2 ${open ? "rotate-90" : ""} transition-transform`}
+            >
+              <Icon name="arrow" />
+            </div>
           )}
         </div>
-
-        {!collapsed && hasChildren && (
-          <div className={`transition-transform ${open ? "rotate-90" : ""}`}>
-            <Icon name="arrow" />
-          </div>
-        )}
       </li>
 
+      {/* OPET flyout when collapsed */}
       {collapsed && hover && (
         <SidebarPortal>
           <div
-            className="
-              fixed px-4 bg-[#004080]
-              text-white text-sm flex items-center
-              rounded-tr-lg rounded-br-lg
-              shadow-[0_4px_16px_rgba(0,0,0,0.25)]
-              whitespace-nowrap animate-flyout
-            "
+            className="fixed px-4 bg-[#003D79] text-white text-sm flex items-center shadow-[0_4px_16px_rgba(0,0,0,0.16)] whitespace-nowrap"
             style={{
               top: posY,
-              left: "5rem",
+              left: "5.2rem",
               height: rowHeight,
               transform: "translateY(-50%)",
               zIndex: 9999,
+              borderTopRightRadius: 8,
+              borderBottomRightRadius: 8,
+              transition:
+                "opacity 180ms ease, transform 180ms cubic-bezier(.2,.9,.2,1)",
             }}
           >
-            {label}
+            <div className="flex items-center gap-3">
+              <Icon name={iconName} className="w-4 h-4" />
+              <span className="text-sm">{label}</span>
+            </div>
           </div>
         </SidebarPortal>
       )}
@@ -193,207 +222,228 @@ function MenuRow({
   );
 }
 
-/* ================= SIDEBAR ================= */
-export default function Sidebar({ collapsed, setCollapsed, onSelectMenu }) {
+/* ================= OPET MAIN SIDEBAR ================= */
+export default function Sidebar({
+  collapsed,
+  // setCollapsed,
+  onSelectMenu,
+  sidebarWidth,
+  mobileSidebarOpen,
+  setMobileSidebarOpen,
+  onToggleSidebar,
+}) {
+  const menuItems = IAM.menu;
   const [openMenus, setOpenMenus] = useState([]);
+  const [activePath, setActivePath] = useState(["Home"]);
 
-  const toggleMenu = (key, label) => {
-    if (collapsed) return;
-
-    setOpenMenus((prev) =>
-      prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]
-    );
-
-    onSelectMenu([label]);
+  // OPET set active path and notify parent
+  const activatePath = (pathArray) => {
+    setActivePath(pathArray);
+    onSelectMenu?.(pathArray);
   };
 
+  // OPET toggle parent accordion
+  const toggleMenu = (key, label, isMobile = false) => {
+    const setMenuList = isMobile ? setOpenMenusMobile : setOpenMenus;
+
+    setMenuList((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+
+    activatePath([label]);
+  };
+
+  const isParentActive = (label) => activePath && activePath[0] === label;
+  const [openMenusMobile, setOpenMenusMobile] = useState([]); // mobile
+
   return (
-    <nav
-      className="fixed top-16 left-0 bg-[#00356b] text-white z-40 flex flex-col overflow-hidden"
-      style={{
-        width: collapsed ? "5rem" : "280px", // 🔥 width baru
-        height: collapsed ? "760px" : "760px", // 🔥 height fix
-        transition: "width 250ms cubic-bezier(0.4,0,0.2,1)",
-      }}
-    >
-      {/* HEADER */}
-      <div
-        className="pt-5 pb-2 transition-all"
+    <>
+      <nav
+        className={`fixed top-20 left-0 bg-[#003D79] text-white z-40 flex flex-col overflow-hidden transition-all duration-150 ease-in-out`}
         style={{
-          paddingInline: collapsed ? "0" : "1.5rem",
-          opacity: collapsed ? 0 : 1,
+          width: sidebarWidth,
+          opacity: sidebarWidth === "0px" ? 0 : 1,
+          transform:
+            sidebarWidth === "0px" ? "translateX(-20px)" : "translateX(0)",
+          height: "calc(100vh - 5rem)",
         }}
       >
-        {!collapsed && (
+        {/* OPET HEADER */}
+        <div
+          className="pt-[16px] pb-[16px] transition-all"
+          style={{
+            paddingInline: collapsed ? "0" : "1.5rem",
+            opacity: collapsed ? 0 : 1,
+          }}
+        >
+          {!collapsed && (
+            <div className="text-[18px] font-semibold text-[#FEFDFA] leading-[1.2] tracking-wide">
+              CASH AND ASSET MANAGEMENT SYSTEM
+            </div>
+          )}
+        </div>
+
+        {/* OPET MENU LIST */}
+        <div className="flex-1 overflow-y-auto sidebar-scroll overflow-x-hidden">
+          <ul className="mt-2 pb-6 select-none m-0 p-0">
+            {menuItems.map((m) => (
+              <React.Fragment key={m.key}>
+                {/* OPET parent row */}
+                <MenuRow
+                  iconName={m.icon}
+                  label={m.label}
+                  collapsed={collapsed}
+                  hasChildren={!!m.children}
+                  open={openMenus.includes(m.key)}
+                  onClick={() => toggleMenu(m.key, m.label, false)}
+                  onActivate={(path) => activatePath(path)}
+                  isActive={isParentActive(m.label)}
+                />
+
+                {!collapsed && m.children && (
+                  <div
+                    className="overflow-hidden bg-[#003D79] transition-all duration-400 ease-in-out"
+                    style={{
+                      maxHeight: openMenus.includes(m.key) ? "400px" : "0px",
+                      opacity: openMenus.includes(m.key) ? 1 : 0,
+                    }}
+                  >
+                    <div className="py-0">
+                      <SubMenuList
+                        items={m.children}
+                        activePath={activePath}
+                        activatePath={activatePath}
+                        parentPath={[m.label]}
+                        level={1}
+                      />
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </ul>
+        </div>
+
+        {/* OPET TOGGLE BUTTON */}
+        <div
+          className="border-t border-white/10 flex items-center"
+          style={{
+            width: collapsed ? "5rem" : "280px",
+            height: "52px",
+            transition: "width 250ms cubic-bezier(0.4,0,0.2,1)",
+          }}
+        >
+          <div
+            className={`flex items-center ${
+              collapsed ? "justify-center" : "justify-end"
+            } w-full h-full px-4`}
+          >
+            {/* OPET FIXED WRAPPER */}
+            <div
+              onClick={() => {
+                setOpenMenus([]);
+                onToggleSidebar();
+              }}
+              className="
+                w-[20px] h-[20px]
+                flex items-center justify-center
+                cursor-pointer
+                transition-transform duration-500 ease-in-out
+                hover:scale-125
+              "
+            >
+              {/* OPET ICON — DIFFERENT SIZE FIX */}
+              <img
+                src={collapsed ? "/maximize.svg" : "/minimize.svg"}
+                alt="toggle sidebar"
+                className={`
+                object-contain
+                transition-transform duration-500 ease-in-out
+
+                ${
+                  collapsed
+                    ? "w-[20px] h-[20px] rotate-[360deg]"
+                    : "w-[10px] h-[10px] scale-[1.35] rotate-0"
+                }
+              `}
+              />
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* =================== OPET MOBILE SIDEBAR =================== */}
+      {mobileSidebarOpen && (
+        <div
+          className="
+            fixed top-20 left-0 right-0 bottom-0 
+            bg-black/40 z-[9998] md:hidden 
+            transition-opacity duration-200
+          "
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+      <nav
+        className={`
+          fixed top-20 left-0 bg-[#003D79] text-white z-[9999]
+          flex flex-col overflow-hidden 
+          w-[280px] h-[calc(100vh-5rem)]
+          transition-transform duration-200 ease-in-out
+          md:hidden
+          ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
+      >
+        {/* OPET HEADER */}
+        <div className="pt-[16px] pb-[16px] transition-all px-6">
           <div className="text-[18px] font-semibold text-[#FEFDFA] leading-[1.2] tracking-wide">
             CASH AND ASSET MANAGEMENT SYSTEM
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* MENU LIST */}
-      <div className="flex-1 overflow-y-auto sidebar-scroll pr-1 overflow-x-hidden">
-        <ul className="mt-2 pb-6 select-none">
-          {/* MASTER PARAMETER */}
-          <MenuRow
-            iconName="master"
-            label="Master Parameter"
-            collapsed={collapsed}
-            hasChildren
-            open={openMenus.includes("master")}
-            onClick={() => toggleMenu("master", "Master Parameter")}
-            onSelectMenu={onSelectMenu}
-          />
+        {/* OPET MENU LIST — EXACT SAME WITH DESKTOP */}
+        <div className="flex-1 overflow-y-auto sidebar-scroll overflow-x-hidden">
+          <ul className="mt-2 pb-6 select-none m-0 p-0">
+            {menuItems.map((m) => (
+              <React.Fragment key={m.key}>
+                {/* OPET parent row */}
+                <MenuRow
+                  iconName={m.icon}
+                  label={m.label}
+                  collapsed={false}
+                  hasChildren={!!m.children}
+                  open={openMenusMobile.includes(m.key)}
+                  onClick={() => toggleMenu(m.key, m.label, true)}
+                  onActivate={(path) => activatePath(path)}
+                  isActive={isParentActive(m.label)}
+                />
 
-          {!collapsed && (
-            <div
-              className="overflow-hidden bg-[#002b59]"
-              style={{
-                maxHeight: openMenus.includes("master") ? "180px" : "0px",
-                transition: "max-height 260ms",
-              }}
-            >
-              <ul className="pl-12 py-2 space-y-2 text-sm">
-                <li
-                  className="text-white/80 hover:text-white cursor-pointer"
-                  onClick={() =>
-                    onSelectMenu(["Master Parameter", "Submenu A"])
-                  }
-                >
-                  Submenu A
-                </li>
-                <li
-                  className="text-white/80 hover:text-white cursor-pointer"
-                  onClick={() =>
-                    onSelectMenu(["Master Parameter", "Submenu B"])
-                  }
-                >
-                  Submenu B
-                </li>
-              </ul>
-            </div>
-          )}
-
-          {/* STATIC MENUS */}
-          <MenuRow
-            iconName="id"
-            label="Penambahan ID Transaksi"
-            collapsed={collapsed}
-            onSelectMenu={onSelectMenu}
-          />
-          <MenuRow
-            iconName="cams"
-            label="CAMS"
-            collapsed={collapsed}
-            onSelectMenu={onSelectMenu}
-          />
-          <MenuRow
-            iconName="petty"
-            label="Petty Cash"
-            collapsed={collapsed}
-            onSelectMenu={onSelectMenu}
-          />
-
-          {/* BIAYA UMUM TREE */}
-          <MenuRow
-            iconName="cost"
-            label="Biaya Umum"
-            collapsed={collapsed}
-            hasChildren
-            open={openMenus.includes("cost")}
-            onClick={() => toggleMenu("cost", "Biaya Umum")}
-            onSelectMenu={onSelectMenu}
-          />
-
-          {!collapsed && (
-            <div
-              className="overflow-hidden bg-[#002b59]"
-              style={{
-                maxHeight: openMenus.includes("cost") ? "160px" : "0px",
-                transition: "max-height 260ms",
-              }}
-            >
-              <ul className="pl-12 py-2 space-y-2 text-sm">
-                <li
-                  className="text-white/80 hover:text-white cursor-pointer"
-                  onClick={() => onSelectMenu(["Biaya Umum", "Realisasi"])}
-                >
-                  Realisasi
-                </li>
-                <li
-                  className="text-white/80 hover:text-white cursor-pointer"
-                  onClick={() => onSelectMenu(["Biaya Umum", "Approval"])}
-                >
-                  Approval
-                </li>
-              </ul>
-            </div>
-          )}
-
-          {/* MORE MENUS */}
-          <MenuRow
-            iconName="promo"
-            label="Promosi"
-            collapsed={collapsed}
-            onSelectMenu={onSelectMenu}
-          />
-          <MenuRow
-            iconName="entertain"
-            label="Entertain"
-            collapsed={collapsed}
-            onSelectMenu={onSelectMenu}
-          />
-          <MenuRow
-            iconName="kasbon"
-            label="Realisasi Kasbon"
-            collapsed={collapsed}
-            onSelectMenu={onSelectMenu}
-          />
-          <MenuRow
-            iconName="fund"
-            label="Fund Transaction"
-            collapsed={collapsed}
-            onSelectMenu={onSelectMenu}
-          />
-          {/* <MenuRow
-            iconName="monitor"
-            label="Monitoring Request"
-            collapsed={collapsed}
-            onSelectMenu={onSelectMenu}
-          />
-          <MenuRow
-            iconName="todo"
-            label="To Do List"
-            collapsed={collapsed}
-            onSelectMenu={onSelectMenu}
-          />
-          <MenuRow
-            iconName="report"
-            label="Report"
-            collapsed={collapsed}
-            onSelectMenu={onSelectMenu}
-          /> */}
-        </ul>
-      </div>
-
-      {/* TOGGLE BUTTON */}
-      <div className="p-3 border-t border-white/10">
-        <button
-          onClick={() => {
-            setOpenMenus([]);
-            setCollapsed(!collapsed);
-          }}
-          className="w-full p-2 rounded-md hover:bg-[#002b59] flex justify-center"
-        >
-          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M3 6h18M3 12h18M3 18h18"
-              stroke="white"
-              strokeWidth="1.7"
-            />
-          </svg>
-        </button>
-      </div>
-    </nav>
+                {/* OPET children submenu */}
+                {m.children && (
+                  <div
+                    className="overflow-hidden bg-[#003D79] transition-all duration-300 ease-in-out"
+                    style={{
+                      maxHeight: openMenusMobile.includes(m.key)
+                        ? "400px"
+                        : "0px",
+                      opacity: openMenusMobile.includes(m.key) ? 1 : 0,
+                    }}
+                  >
+                    <div className="py-0">
+                      <SubMenuList
+                        items={m.children}
+                        activePath={activePath}
+                        activatePath={activatePath}
+                        parentPath={[m.label]}
+                        level={1}
+                      />
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </ul>
+        </div>
+      </nav>
+    </>
   );
 }

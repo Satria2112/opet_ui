@@ -7,35 +7,84 @@ import Breadcrumb from "./Breadcrumb";
 
 export default function AppLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
-
-  // 🔵 STATE BREADCRUMB (UPDATE DINAMIS)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState("280px");
   const [breadcrumb, setBreadcrumb] = useState([]);
 
+  const [isReady, setIsReady] = useState(false);
+
+  /* ==========================================================
+     🔥 FIX RESPONSIVE RULES (OPEETTT)
+     ========================================================== */
   useEffect(() => {
-    const handleResize = () => setCollapsed(window.innerWidth < 768);
+    function handleResize() {
+      const width = window.innerWidth;
+
+      // === OPET RULES ===
+      if (width < 680) {
+        // OPET Mobile mode
+        setCollapsed(false);
+        setSidebarWidth("0px");
+      } else if (width < 768) {
+        // OPET Tablet / collapsed desktop
+        setCollapsed(true);
+        setSidebarWidth("5rem");
+      } else {
+        // OPET Full desktop
+        setCollapsed(false);
+        setSidebarWidth("280px");
+      }
+
+      // OPET Auto close mobile sidebar when entering desktop
+      if (width >= 680) {
+        setMobileSidebarOpen(false);
+      }
+    }
+
     handleResize();
+    setIsReady(true);
+
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const sidebarWidth = collapsed ? "5rem" : "280px";
+  function handleToggleSidebar() {
+    setCollapsed((prev) => {
+      const newValue = !prev;
+      setSidebarWidth(newValue ? "5rem" : "280px");
+      return newValue;
+    });
+  }
+
+  if (!isReady) {
+    return <div className="w-full h-screen bg-[#eef3fa]" />;
+  }
 
   return (
     <>
-      <Header />
+      {/* OPET HEADER */}
+      <Header
+        onToggleMobileSidebar={() => setMobileSidebarOpen((prev) => !prev)}
+        mobileSidebarOpen={mobileSidebarOpen}
+      />
 
-      {/* Pass callback untuk update breadcrumb */}
+      {/* OPET SIDEBAR */}
       <Sidebar
         collapsed={collapsed}
         setCollapsed={setCollapsed}
         onSelectMenu={setBreadcrumb}
+        sidebarWidth={sidebarWidth}
+        mobileSidebarOpen={mobileSidebarOpen}
+        setMobileSidebarOpen={setMobileSidebarOpen}
+        onToggleSidebar={handleToggleSidebar}
       />
 
-      {/* Breadcrumb menerima state dinamis */}
+      {/* OPET BREADCRUMB */}
       <Breadcrumb items={["Home", ...breadcrumb]} collapsed={collapsed} />
 
+      {/* OPET MAIN CONTENT */}
       <main
-        className="pt-28 min-h-screen bg-[#eef3fa] transition-all"
+        className="pt-28 min-h-screen bg-[#eef3fa]"
         style={{
           marginLeft: sidebarWidth,
           transition: "margin-left 260ms cubic-bezier(0.4,0,0.2,1)",
